@@ -1,0 +1,4 @@
+HACS - To allow installation of other custom integrations - https://github.com/hacs/integration
+Template Climate - For creations of Climate entity in HA -  https://github.com/jcwillox/hass-template-climate
+Bubble-Card - To allow hot tub control panel to popup - https://github.com/Clooos/Bubble-Card
+Card-Mod - Might be needed for customizing things - https://github.com/thomasloven/lovelace-card-mod

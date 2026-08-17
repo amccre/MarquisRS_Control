@@ -1,0 +1,30 @@
+alias: Hot Tub - Capture Blinking Set-Temp
+description: >
+  Whenever the LCD text sensor toggles on/off quickly with a numeric value,
+  store that number as the "set temperature."
+triggers:
+  - entity_id: sensor.hot_tub_display
+    trigger: state
+conditions:
+  - condition: template
+    value_template: >
+      {% set old = trigger.from_state %} {% set new = trigger.to_state %} {% set
+      delta = as_timestamp(new.last_changed) - as_timestamp(old.last_changed) %}
+      {{ new.state is string
+         and new.state | regex_match('^\\s?\\d+$')
+         and (delta < 1) }}
+actions:
+  - wait_for_trigger:
+      - entity_id: sensor.hot_tub_display
+        to: "   "
+        trigger: state
+    timeout:
+      hours: 0
+      minutes: 0
+      seconds: 2
+      milliseconds: 0
+    continue_on_timeout: false
+  - data:
+      entity_id: input_number.hot_tub_set_temperature
+      value: "{{ trigger.to_state.state | int }}"
+    action: input_number.set_value

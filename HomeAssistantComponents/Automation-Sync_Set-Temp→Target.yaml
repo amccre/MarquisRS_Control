@@ -1,0 +1,18 @@
+alias: Hot Tub – Sync Set-Temp → Target
+description: >
+  If someone manually changes `input_number.hot_tub_set_temperature`, copy it
+  into `input_number.hot_tub_target_temperature` so the climate slider updates.
+  (Skip this when `hot_tub_ignore_sync` is on, i.e. while our adjust script is
+  running.)
+triggers:
+  - entity_id: input_number.hot_tub_set_temperature
+    trigger: state
+conditions:
+  - condition: state
+    entity_id: input_boolean.hot_tub_ignore_sync
+    state: "off"
+actions:
+  - data:
+      entity_id: input_number.hot_tub_target_temperature
+      value: "{{ trigger.to_state.state | int }}"
+    action: input_number.set_value

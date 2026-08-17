@@ -1,0 +1,66 @@
+alias: Hot Tub – Read & Adjust to Target
+fields:
+  target_temp:
+    description: Which °F we want to end up at
+    example: 102
+sequence:
+  - target:
+      entity_id: input_boolean.hot_tub_ignore_sync
+    action: input_boolean.turn_on
+  - target:
+      entity_id: button.hot_tub_control_temp_set_button
+    data: {}
+    action: button.press
+  - delay:
+      seconds: 2
+  - variables:
+      target: "{{ target_temp | int }}"
+  - repeat:
+      until:
+        - condition: template
+          value_template: |
+            {{ states('input_number.hot_tub_set_temperature') | int == target }}
+      sequence:
+        - variables:
+            prev: "{{ states('input_number.hot_tub_set_temperature') | int }}"
+        - target:
+            entity_id: button.hot_tub_control_temp_set_button
+          data: {}
+          action: button.press
+        - delay:
+            seconds: 1.5
+        - variables:
+            raw: "{{ states('input_number.hot_tub_set_temperature') | int }}"
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: |
+                    {{ (raw > prev and target < prev)
+                       or
+                       (raw < prev and target > prev) }}
+              sequence:
+                - delay:
+                    seconds: 5
+                - target:
+                    entity_id: button.hot_tub_control_temp_set_button
+                  data: {}
+                  action: button.press
+                - delay:
+                    seconds: 2
+                - target:
+                    entity_id: button.hot_tub_control_temp_set_button
+                  data: {}
+                  action: button.press
+                - delay:
+                    seconds: 1
+        - delay:
+            seconds: 1
+  - data:
+      name: Hot Tub Read+Adjust
+      message: Reached {{ target }}°F.
+    action: logbook.log
+  - target:
+      entity_id: input_boolean.hot_tub_ignore_sync
+    action: input_boolean.turn_off
+mode: restart
+description: ""

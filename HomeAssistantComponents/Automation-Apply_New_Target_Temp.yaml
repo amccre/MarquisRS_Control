@@ -1,0 +1,9 @@
+alias: Hot Tub – Apply New Target Temp
+description: ""
+triggers:
+  - entity_id: input_number.hot_tub_target_temperature
+    trigger: state
+actions:
+  - data:
+      target_temp: "{{ trigger.to_state.state | int }}"
+    action: script.hot_tub_read_adjust_to_target

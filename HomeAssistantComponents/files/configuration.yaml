@@ -1,0 +1,67 @@
+climate:
+  - platform: climate_template
+    name: "Hot Tub Thermostat"
+    unique_id: hot_tub_thermostat
+
+    # ─── What the “current temperature” is (shown on the card) ───
+    current_temperature_template: >-
+      {{ states('sensor.hot_tub_temperature') }}
+
+    # ─── What the “target temperature” is (the slider) ───
+    target_temperature_template: >-
+      {{ states('input_number.hot_tub_target_temperature') }}
+
+    # ─── When you drag the slider (or call climate.set_temperature) ───
+    set_temperature:
+      service: input_number.set_value
+      data:
+        entity_id: input_number.hot_tub_target_temperature
+        value: "{{ temperature }}"
+
+    # ─── Which HVAC modes to expose in the UI ───
+    modes:
+      - "heat"
+      - "off"
+
+    # ─── Min/max/step for target temperature slider ───
+    min_temp: 80
+    max_temp: 104
+    precision: 1
+
+    # ─── (Optional) Report heating vs idle based on a binary_sensor ───
+    hvac_mode_template: >-
+      {%- if is_state('sensor.hot_tub_display', 'unavailable')
+            or is_state('sensor.hot_tub_display', 'unknown') -%}
+        off
+      {%- else -%}
+        heat
+      {%- endif -%}
+
+    hvac_action_template: >-
+      {%- if is_state('binary_sensor.hot_tub_control_heating', 'on') -%}
+        heating
+      {%- else -%}
+        idle
+      {%- endif -%}
+
+template:
+  - sensor:
+      - name: "Hot Tub Temperature"
+        unique_id: hot_tub_temperature
+        state: "{{ states('input_number.hot_tub_temperature') }}"
+        unit_of_measurement: "°F"
+
+      - name: "Hot Tub Set Temperature"
+        unique_id: hot_tub_set_temperature
+        state: "{{ states('input_number.hot_tub_set_temperature') }}"
+        unit_of_measurement: "°F"
+
+      - name: "Hot Tub Error Code"
+        unique_id: hot_tub_error_code
+        state: >
+          {% set txt = states('sensor.hot_tub_display') %}
+          {% if txt is string and txt | regex_search('[A-Za-z]') -%}
+            {{ txt }}
+          {% else %}
+            No Errors
+          {% endif %}

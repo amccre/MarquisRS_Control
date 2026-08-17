@@ -26,12 +26,11 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    # Keep the device-specific API key in the untracked secrets.yaml file.
+    # Keep deployment credentials in the local, ignored secrets.yaml file.
     key: !secret api_encryption_key
 
 ota:
   - platform: esphome
-    # Keep the OTA password out of source control.
     password: !secret ota_password
 
 wifi:

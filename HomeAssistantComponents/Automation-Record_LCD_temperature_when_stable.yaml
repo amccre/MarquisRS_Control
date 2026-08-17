@@ -1,0 +1,19 @@
+alias: Hot tub Record LCD temperature when stable
+description: >
+  Only grab and store the temperature if the LCD text sensor shows a pure number
+  for at least 3 seconds (i.e. not blinking).
+triggers:
+  - entity_id: sensor.hot_tub_display
+    for:
+      seconds: 3
+    trigger: state
+conditions:
+  - condition: template
+    value_template: >
+      {% set raw = trigger.to_state.state.strip() %} {{ raw |
+      regex_match('^[0-9]+$') }}
+actions:
+  - data:
+      entity_id: input_number.hot_tub_temperature
+      value: "{{ trigger.to_state.state | int }}"
+    action: input_number.set_value

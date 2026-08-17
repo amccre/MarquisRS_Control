@@ -1,249 +1,268 @@
 # Marquis Recreational Series Hot Tub Control
 
-ESPHome and Home Assistant control/monitoring for Marquis Recreational Series hot tubs. The project uses an ESP32 to passively decode the topside panel display, report heating and equipment state, and electronically simulate the panel's button presses.
+ESPHome firmware, a custom display-decoder component, Home Assistant configuration, circuit documentation, and fabrication files for controlling and monitoring a Marquis Recreational Series hot tub with an ESP32.
 
-> [!WARNING]
-> Hot tubs contain lethal **120/240 V AC**, high-current loads, water, and wet-location wiring. This repository is an educational/hobby project—not a certified spa controller. Installation should be performed or reviewed by a qualified electrician, must retain GFCI protection, and must use suitable isolation, fusing, enclosures, strain relief, grounding, and moisture protection. Disconnect and verify power before opening the spa equipment bay. Use this project at your own risk.
+> [!CAUTION]
+> A spa combines lethal **120/240 V AC**, high-current equipment, water, and wet-location wiring. This is an experimental hobby project, not a listed or certified spa controller. Retain all factory safety controls and GFCI protection. Use appropriate isolation, fusing, grounding, strain relief, moisture protection, and enclosures. Disconnect and verify power before opening equipment. Installation should be completed or reviewed by a qualified electrician. You assume all risk.
 
-![Home Assistant hot tub controls](Photos/HotTubControlPanel_HomeAssistant.PNG)
+![Home Assistant hot tub control panel](Photos/HotTubControlPanel_HomeAssistant.PNG)
 
-## What It Does
+## Overview
 
-- Passively reads the clock and data signals sent to the original topside display.
-- Decodes 21-bit frames into the three-character temperature/status display.
-- Reports the heater indicator as a Home Assistant binary sensor.
-- Exposes **Soak Timer**, **Temp Set**, **Lights**, and **Jets** controls.
-- Measures four loads through an ADS1115 and split-core CT sensors:
-  - lights;
-  - ozonator;
-  - jets low speed; and
-  - jets high speed.
-- Integrates with Home Assistant through ESPHome's native API.
-- Includes circuit drawings, printable enclosure models, build photos, and protocol-research material.
+The project was developed for circa-2000-and-newer Marquis Recreational Series models such as the **Quest RS**, **Destiny RS**, and **Reward RS**. It preserves the original topside panel while adding network visibility and control:
 
-The work was developed for circa-2000-and-newer Marquis Recreational Series models including the **Quest RS**, **Destiny RS**, and **Reward RS**. Hardware and protocol revisions may differ, so verify every signal before connecting your equipment.
+- passively samples the panel clock and data lines;
+- decodes the three-character, seven-segment LCD data and heater indicator;
+- exposes **Soak Timer**, **Temp Set**, **Lights**, and **Jets** as Home Assistant buttons;
+- monitors lights, ozonator, low-speed jets, and high-speed jets with split-core current transformers;
+- creates a Home Assistant climate entity and target-temperature workflow; and
+- provides example automations and a popup dashboard modeled after the original panel.
 
-## Project Status
+This implementation is hardware-specific. Marquis changed hardware over time, so verify connector pinout, logic levels, signal behavior, and button circuitry on your own equipment before connecting it.
 
-This is a working, hardware-specific DIY implementation rather than a universal plug-and-play product.
-
-- **v2.0** is the current ESPHome component and recommended starting point.
-- **v1.0** is retained as historical/reference material.
-- Current-transformer calibration and state thresholds must be validated for each installation.
-- No automated hardware-in-the-loop test suite is included.
-
-## Hardware
-
-### Main Components
-
-| Quantity | Component | Purpose |
-| ---: | --- | --- |
-| 1 | ESP32 development board (`esp32dev`) | ESPHome controller and display decoder |
-| 1 | ADS1115, address `0x48` | Four-channel current-sensor ADC |
-| 2 | SCT-013-005 (5 A : 1 V) CT sensors | Lights and ozonator monitoring |
-| 2 | SCT-013-010 (10 A : 1 V) CT sensors | Low- and high-speed jet monitoring |
-| As required | Optocouplers/transistor output stages | Electrically isolated button simulation |
-| As required | Protected power supply, fuse, connectors, enclosure | Safe installation |
-
-See [`Circuit_Diagram.pdf`](Circuit_Diagram.pdf) for the circuit drawing and [`Buttons&CTs.txt`](Buttons%26CTs.txt) for the original component notes.
-
-### ESP32 Pin Map
-
-| ESP32 pin | Function |
-| --- | --- |
-| GPIO25 | Topside display clock input |
-| GPIO26 | Topside display data input |
-| GPIO19 | Lights button output |
-| GPIO18 | Soak Timer button output |
-| GPIO17 | Temp Set button output |
-| GPIO16 | Jets button output |
-| GPIO21 | ADS1115 I²C SDA |
-| GPIO22 | ADS1115 I²C SCL |
-
-The button outputs issue 150 ms pulses. They are logic signals and should operate a correctly designed isolated interface—not be connected directly to an unknown-voltage panel circuit.
-
-### ADS1115 Channels
-
-| Channel | Monitored load | Example threshold |
-| --- | --- | ---: |
-| A0 | Lights | 0.75 A |
-| A1 | Ozonator | 0.05 A |
-| A2 | Jets low speed | 2 A |
-| A3 | Jets high speed | 2 A |
-
-The checked-in values document one installation only. Calibrate against known loads and adjust the `calibrate_linear` filters and thresholds before relying on them.
-
-## Repository Layout
+## Repository Contents
 
 ```text
 .
 ├── ESPHomeComponents/
 │   └── marquis_rs_interface_component/
-│       ├── v1.0/                     # Historical component/configuration
-│       └── v2.0/                     # Current component/configuration
-├── Photos/                            # Build and Home Assistant images
-├── ReverseEngineering/                # Protocol captures and research
-├── Circuit_Diagram.odg                # Editable circuit drawing
-├── Circuit_Diagram.pdf                # Viewable circuit drawing
-├── Enclosure-Blank.stl                # Blank enclosure model
-├── HotTubControlEnclosure.stl         # Finished printable enclosure
-└── Buttons&CTs.txt                     # Original controls/CT notes
+│       ├── hot-tub-control.yaml          # ESP32/ESPHome device configuration
+│       ├── secrets.example.yaml          # Safe local-secret template
+│       ├── README.md                     # Display protocol/component details
+│       └── my_components/
+│           └── marquis_rs_interface/     # Custom ESPHome component
+├── HomeAssistantComponents/
+│   ├── Automation-*.yaml                 # Four supporting automations
+│   ├── script.hot_tub_*.txt              # Temperature-adjustment script
+│   ├── DashboardExampleConfig.txt        # Example Lovelace view
+│   ├── Helpers_Required.txt               # Required helper entities
+│   ├── HACs_Components_Required.txt       # Third-party UI/integration list
+│   └── files/
+│       ├── configuration.yaml            # Climate/template configuration
+│       └── www/                           # Dashboard image assets
+├── Photos/                                # Build and finished-install images
+├── ReverseEngineering/                    # Protocol captures and pinout research
+├── CircuitDiagram.png                     # Browser-friendly circuit diagram
+├── Circuit_Diagram.pdf                    # Printable circuit diagram
+├── Circuit_Diagram.odg                    # Editable circuit source
+├── Enclosure-Blank.stl                    # Blank enclosure model
+├── HotTubControlEnclosure.stl             # Finished enclosure model
+└── Buttons&CTs.txt                         # Original controls and CT notes
 ```
 
-The current firmware lives in:
+## Hardware
 
-```text
-ESPHomeComponents/marquis_rs_interface_component/v2.0/
-├── hot-tub-control.yaml
-├── secrets.example.yaml
-└── my_components/
-    └── marquis_rs_interface/
-        ├── __init__.py
-        ├── component.yaml
-        ├── marquis_rs_interface.cpp
-        └── marquis_rs_interface.h
-```
+### Principal Components
 
-## ESPHome Setup
+| Quantity | Component | Purpose |
+| ---: | --- | --- |
+| 1 | ESP32 development board (`esp32dev`) | ESPHome controller and display decoder |
+| 1 | ADS1115 at I²C address `0x48` | Four-channel CT input ADC |
+| 2 | SCT-013-005, 5 A : 1 V | Lights and ozonator monitoring |
+| 2 | SCT-013-010, 10 A : 1 V | Low- and high-speed jet monitoring |
+| As required | Optocouplers/transistor stages | Isolated simulation of panel buttons |
+| As required | Protected power supply, fuse, connectors, enclosure | Safe permanent installation |
 
-### 1. Get the Repository
+See the [circuit diagram](CircuitDiagram.png), [PDF drawing](Circuit_Diagram.pdf), and [original component notes](Buttons%26CTs.txt) before assembly.
 
-Clone this private repository on the system where ESPHome is installed:
+### ESP32 Pin Assignments
+
+| Pin | Function |
+| --- | --- |
+| GPIO25 | Topside-display clock input |
+| GPIO26 | Topside-display data input |
+| GPIO19 | Lights button output |
+| GPIO18 | Soak Timer button output |
+| GPIO17 | Temp Set button output |
+| GPIO16 | Jets button output |
+| GPIO21 | ADS1115 SDA |
+| GPIO22 | ADS1115 SCL |
+
+Button outputs pulse for 150 ms. ESP32 pins must drive the documented interface circuitry; do **not** connect a GPIO directly to mains or an unverified panel circuit.
+
+### Current Monitoring
+
+| ADS1115 channel | Load | Initial on-threshold | Calibration in supplied YAML |
+| --- | --- | ---: | ---: |
+| A0 | Lights | 0.75 A | 1 raw → 5 A |
+| A1 | Ozonator | 0.05 A | 1 raw → 5 A |
+| A2 | Jets low | 2 A | 1 raw → 10 A |
+| A3 | Jets high | 2 A | 1 raw → 10 A |
+
+These values describe one installation. Place each CT around **one conductor only**, compare readings with a trusted meter/known load, and tune both `calibrate_linear` and binary-sensor thresholds.
+
+## ESPHome Installation
+
+### 1. Copy the Project
+
+Clone this repository on the host running ESPHome, then enter the component directory:
 
 ```bash
 git clone https://github.com/amccre/MarquisRS_Control.git
-cd MarquisRS_Control/ESPHomeComponents/marquis_rs_interface_component/v2.0
+cd MarquisRS_Control/ESPHomeComponents/marquis_rs_interface_component
 ```
+
+Because the GitHub repository is private, cloning requires an authenticated GitHub account with access.
 
 ### 2. Create Local Secrets
 
-Copy the provided template. Do **not** commit the resulting `secrets.yaml` file.
-
-PowerShell:
+Copy `secrets.example.yaml` to `secrets.yaml` and replace every placeholder. The resulting file is ignored by Git.
 
 ```powershell
 Copy-Item secrets.example.yaml secrets.yaml
 ```
 
-Linux/macOS:
+Or on Linux/macOS:
 
 ```bash
 cp secrets.example.yaml secrets.yaml
 ```
 
-Edit `secrets.yaml` and provide unique values for:
+Required values are `wifi_ssid`, `wifi_password`, `api_encryption_key`, `ota_password`, and `fallback_ap_password`.
 
-- `wifi_ssid`
-- `wifi_password`
-- `api_encryption_key`
-- `ota_password`
-- `fallback_ap_password`
+Generate a compatible API encryption key with `openssl rand -base64 32`, or let ESPHome generate one. Use unique random values for OTA and fallback access. Credentials formerly present in the local source were deliberately replaced with secret references and should be rotated if still in use.
 
-Generate an ESPHome-compatible API key with:
+### 3. Review and Flash
 
-```bash
-openssl rand -base64 32
-```
-
-Use long, unique random values for the OTA and fallback hotspot passwords.
-
-### 3. Review the Configuration
-
-Before flashing, verify these items in [`hot-tub-control.yaml`](ESPHomeComponents/marquis_rs_interface_component/v2.0/hot-tub-control.yaml):
-
-1. ESP32 board type and framework.
-2. GPIO assignments against the physical circuit.
-3. ADS1115 address and I²C wiring.
-4. CT calibration factors.
-5. Current thresholds for each binary sensor.
-6. Isolation and active-high behavior of every button output.
-
-### 4. Validate and Flash
-
-From the v2.0 directory:
+Before applying power, verify board type, GPIO assignments, ADS1115 address, logic levels, electrical isolation, CT channels, calibration, and thresholds.
 
 ```bash
 esphome config hot-tub-control.yaml
 esphome run hot-tub-control.yaml
 ```
 
-The first flash may be performed over USB. Subsequent updates can use ESPHome OTA after the device joins the network.
+Use USB for the initial flash. Once connected, later updates can use ESPHome OTA.
 
-### 5. Add to Home Assistant
+### 4. Add the Device to Home Assistant
 
-ESPHome normally advertises the device automatically. In Home Assistant:
+In Home Assistant, open **Settings → Devices & services** and add the discovered ESPHome device. Supply the API encryption key from your local `secrets.yaml` when requested.
 
-1. Open **Settings → Devices & services**.
-2. Select the discovered ESPHome device, or add the **ESPHome** integration manually.
-3. Supply the API encryption key when prompted.
-4. Add the display, heating, current, state, and button entities to a dashboard.
+Expected entities include:
 
-## Display Protocol
+- `sensor.hot_tub_display` (the entity may initially include the ESPHome device prefix);
+- `binary_sensor.hot_tub_control_heating`;
+- lights, ozonator, jets-low, and jets-high binary sensors/current sensors; and
+- four button entities for Soak Timer, Temp Set, Lights, and Jets.
 
-The custom `marquis_rs_interface` component attaches an interrupt to the display clock line and samples the data line on rising edges. A gap greater than 1,000 µs marks a frame boundary. Each frame contains 21 bits, transmitted most-significant bit first.
+Entity IDs in the supplied Home Assistant examples assume the names shown above. If Home Assistant generates different IDs, update the examples before enabling them.
+
+## Home Assistant Configuration
+
+The files in [`HomeAssistantComponents`](HomeAssistantComponents/) are examples to merge into an existing Home Assistant installation—not a drop-in replacement for your complete configuration.
+
+### 1. Install Optional Custom Components
+
+The supplied UI/configuration uses the following projects:
+
+- [HACS](https://github.com/hacs/integration), to manage custom integrations;
+- [Template Climate](https://github.com/jcwillox/hass-template-climate), required for `climate.hot_tub_thermostat`;
+- [Bubble Card](https://github.com/Clooos/Bubble-Card), used for the popup panel;
+- [card-mod](https://github.com/thomasloven/lovelace-card-mod), potentially needed for styling; and
+- a `custom:text-action-element` card used by the example dashboard (install a compatible text-action element or replace those elements with built-in labels).
+
+Restart Home Assistant after installing custom integrations/frontend resources.
+
+### 2. Create Helpers
+
+Create these helpers under **Settings → Devices & services → Helpers**:
+
+| Entity ID | Type | Minimum | Maximum | Suggested icon |
+| --- | --- | ---: | ---: | --- |
+| `input_number.hot_tub_target_temperature` | Number | 80 | 104 | `mdi:target` |
+| `input_number.hot_tub_set_temperature` | Number | 80 | 104 | `mdi:hot-tub` |
+| `input_number.hot_tub_temperature` | Number | 0 | 120 | `mdi:hot-tub` |
+| `input_boolean.hot_tub_ignore_sync` | Toggle | — | — | `mdi:pause` |
+
+Use a step of `1` and °F as the unit for the number helpers. Template sensors are created in the next step.
+
+### 3. Merge the Climate and Template Configuration
+
+Merge [`HomeAssistantComponents/files/configuration.yaml`](HomeAssistantComponents/files/configuration.yaml) into your Home Assistant `configuration.yaml`. Do **not** overwrite an existing file wholesale. If you already have `climate:` or `template:` sections, merge entries while preserving valid YAML structure.
+
+The configuration creates `climate.hot_tub_thermostat`, `sensor.hot_tub_temperature`, `sensor.hot_tub_set_temperature`, and `sensor.hot_tub_error_code`.
+
+Run **Developer Tools → YAML → Check configuration**, then restart Home Assistant.
+
+### 4. Add the Script and Automations
+
+Import or recreate the supplied script first:
+
+- [`script.hot_tub_read_adjust_to_target.txt`](HomeAssistantComponents/script.hot_tub_read_adjust_to_target.txt) reads the displayed setpoint and repeatedly presses Temp Set until the requested target is reached.
+
+Then add the four automations:
+
+1. [`Automation-Capture_Blinking_Set-Temp.yaml`](HomeAssistantComponents/Automation-Capture_Blinking_Set-Temp.yaml) captures the blinking setpoint display.
+2. [`Automation-Record_LCD_temperature_when_stable.yaml`](HomeAssistantComponents/Automation-Record_LCD_temperature_when_stable.yaml) records stable water-temperature readings.
+3. [`Automation-Sync_Set-Temp→Target.yaml`](HomeAssistantComponents/Automation-Sync_Set-Temp%E2%86%92Target.yaml) synchronizes a manually observed setpoint to the target helper.
+4. [`Automation-Apply_New_Target_Temp.yaml`](HomeAssistantComponents/Automation-Apply_New_Target_Temp.yaml) invokes the adjustment script after the target changes.
+
+Review every entity ID before enabling these automations. The adjustment script physically issues button presses and assumes the panel wraps through its setpoint range; test it while observing the real panel.
+
+### 5. Install Dashboard Assets and Example
+
+Copy the contents of [`HomeAssistantComponents/files/www`](HomeAssistantComponents/files/www/) to Home Assistant's `/config/www/`. Files there are exposed as `/local/...` URLs after a restart/browser refresh.
+
+Use [`DashboardExampleConfig.txt`](HomeAssistantComponents/DashboardExampleConfig.txt) as a starting point for a raw Lovelace dashboard. It contains installation-specific floor-plan positioning and an `/api/image/serve/...` reference; replace that background with your own image URL or upload the desired panel image to `/config/www/` and use `/local/<filename>`.
+
+## How Display Decoding Works
+
+The custom [`marquis_rs_interface`](ESPHomeComponents/marquis_rs_interface_component/my_components/marquis_rs_interface/) component samples the panel data line on rising display-clock edges. A gap over 1,000 µs marks a frame boundary. Each frame contains 21 bits, sent most-significant bit first.
 
 ```text
 Bit:      20 | 19 18 | 17 | 16 | 15 14 | 13 ........ 7 | 6 ......... 0
 Meaning:   - | first |  - |heat|   -   | middle digit | final digit
 ```
 
-- Bits 19–18 indicate whether the first character is `1` or blank.
+- Bits 19–18 indicate a leading `1` or blank.
 - Bit 16 is the heater indicator.
-- Bits 13–7 and 6–0 contain seven-segment patterns.
-- Three repeated identical frames are required before publication to reject noise.
-- State publication is rate-limited to 100 ms.
-- A 16-frame ring buffer transfers captured frames from the ISR to ESPHome's main loop.
+- Bits 13–7 and 6–0 hold seven-segment character patterns.
+- Three consecutive identical frames are required to reject noise.
+- A 16-frame ring buffer transfers captures from the interrupt handler to ESPHome's main loop.
+- Publications are rate-limited to avoid overwhelming Home Assistant.
 
-The decoder handles digits and the subset of letters representable by the panel's seven-segment display, allowing values such as `102`, ` 98`, and status/error text. Detailed implementation notes are available in the [v2 component documentation](ESPHomeComponents/marquis_rs_interface_component/v2.0/README.md).
+See the [component documentation](ESPHomeComponents/marquis_rs_interface_component/README.md) and [`ReverseEngineering`](ReverseEngineering/) folder for protocol details and captures.
 
 ## Troubleshooting
 
-### Display is blank, `???`, or unstable
+### Display is blank, unstable, or shows `???`
 
-- Measure signal voltage and confirm it is safe for the ESP32's 3.3 V inputs.
-- Confirm clock/data pins and common reference are correct.
-- Use appropriate buffering, level shifting, and high-impedance taps.
-- Keep low-voltage signal wiring away from pump and heater conductors.
-- Temporarily use ESPHome debug logging to inspect behavior.
+- Verify connector pinout and signal voltage with appropriate test equipment.
+- Confirm clock, data, and reference connections.
+- Use high-impedance taps and appropriate level shifting/buffering.
+- Keep low-voltage signal wiring away from motors, relays, and heater wiring.
+- Enable debug logging while diagnosing frame capture.
 
-### Load state is always on or off
+### Current-based state is always on or off
 
-- Inspect the raw ADS1115 values.
-- Confirm each CT surrounds only one conductor, not an entire cable containing both line and return.
-- Check sensor orientation and channel assignment.
-- Calibrate against a known current and tune both calibration and threshold values.
+- Inspect the underlying current sensor value.
+- Confirm the CT surrounds one conductor, not both line and return.
+- Verify ADS1115 channel assignments and CT type.
+- Calibrate with a known load, then adjust state thresholds.
 
-### A button does not operate the spa
+### A control button does not work
 
-- Verify the optocoupler/transistor circuit and its polarity.
-- Confirm the output is connected to the intended panel switch circuit.
-- Check the required switch closure duration and adjust the 150 ms pulse if necessary.
-- Never connect an ESP32 GPIO directly to mains or an unverified control-panel signal.
+- Verify the isolation/driver circuit, polarity, and selected panel switch.
+- Confirm a 150 ms closure is suitable for the physical panel.
+- Never attach a bare GPIO to an unknown-voltage circuit.
 
-### Wi-Fi is unreliable near the equipment bay
+### Climate target does not track correctly
 
-- Improve antenna placement or use an ESP32 with an external antenna.
-- Check low-voltage supply quality and decoupling.
-- Increase separation from motors, relays, and high-current wiring.
+- Confirm the display entity contains a numeric value during normal operation.
+- Confirm all helper and ESPHome entity IDs match the example YAML.
+- Ensure the four automations and adjustment script are enabled.
+- Observe the panel while testing to validate blink timing and setpoint wraparound.
 
-## Security Notes
+## Security
 
-- Real API, OTA, Wi-Fi, and fallback hotspot credentials are not stored in this repository.
-- `secrets.yaml`, ESPHome build state, and generated Python caches are excluded through `.gitignore`.
-- Rotate any credential that has previously been shared or committed elsewhere.
-- Repository privacy does not replace proper secret management.
+- `secrets.yaml`, ESPHome build state, IDE metadata, and Python caches are ignored.
+- The checked-in ESPHome YAML references secrets rather than storing credentials.
+- Rotate credentials that were ever embedded in another copy of this project.
+- A private GitHub repository is not a substitute for secret management.
 
-## Documentation and Fabrication Files
+## Project Status and Disclaimer
 
-- [Circuit diagram (PDF)](Circuit_Diagram.pdf)
-- [Editable circuit diagram (ODG)](Circuit_Diagram.odg)
-- [Finished enclosure STL](HotTubControlEnclosure.stl)
-- [Blank enclosure STL](Enclosure-Blank.stl)
-- [Build photos](Photos/)
-- [Reverse-engineering material](ReverseEngineering/)
+This is a working DIY implementation, not a universal plug-and-play controller. There is no automated hardware-in-the-loop test suite. Calibrate and validate it against your installation, retain all factory protections, and keep manual control available.
 
-## Disclaimer
+This project is not affiliated with, endorsed by, or supported by Marquis Corp. Product names identify compatibility only. All files are supplied **as is**, without warranty. The user assumes all risk of code-compliance issues, warranty impact, property damage, equipment failure, electric shock, fire, injury, or death.
 
-This project is not affiliated with, endorsed by, or supported by Marquis Corp. Product and model names are used only to describe compatibility. The software, drawings, and models are supplied **as is**, without warranty. The user assumes all risk for property damage, equipment failure, code compliance, warranty impact, electric shock, fire, injury, or death.
-
-No license file is currently included. Unless and until the owner adds an explicit license, the contents remain under the copyright holder's default rights and should not be assumed to be open source solely because the source is visible to repository collaborators.
+No license file is currently included. Unless the owner adds an explicit license, the repository remains subject to the copyright holder's default rights; access to source does not by itself grant reuse or redistribution rights.

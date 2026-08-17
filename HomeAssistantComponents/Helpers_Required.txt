@@ -1,0 +1,24 @@
+input_number.hot_tub_target_temperature
+	icon: mdi.target
+	minimum value: 80
+	maximum value: 104
+
+input_number.hot_tub_set_temperature
+	icon: mdi.hot-tub
+	minimum value: 80
+	maximum value: 104
+
+input_number.hot_tub_temperature
+	icon: mdi.hot-tub
+	minimum value: 0
+	maximum value: 120
+
+input_boolean.hot_tub_ignore_sync
+	icon: mdi.pause
+
+
+sensor.hot_tub_error_code
+	Template in configuration.yaml
+
+sensor.hot_tub_set_temperature
+	Template in configuration.yaml

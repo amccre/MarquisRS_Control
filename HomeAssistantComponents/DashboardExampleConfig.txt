@@ -1,0 +1,235 @@
+views:
+  - path: default_view
+    title: House
+    badges: []
+    cards:
+      - type: picture-elements
+        image: /local/FloorPlanOnly.png
+        elements:
+          - type: icon
+            icon: mdi:hot-tub
+            tap_action:
+              action: navigate
+              navigation_path: '#hot-tub-control'
+            style:
+              top: 50%
+              left: 49.5%
+              color: gray
+              transform: translate(-50%, -50%) scale(2.2, 1.9)
+          - type: image
+            image: /local/88x88.png
+            tap_action:
+              action: navigate
+              navigation_path: '#hot-tub-control'
+            style:
+              top: 52.5%
+              left: 49.4%
+              opacity: 1
+              transform: translate(-50%, -50%) scale(.36,.15)
+          - type: state-label
+            entity: sensor.hot_tub_display
+            tap_action:
+              action: navigate
+              navigation_path: '#hot-tub-control'
+            title: Hot Tub Display
+            prefix: null
+            suffix: °F
+            style:
+              top: 52.5%
+              left: 49.3%
+              font-size: 11px
+              color: black
+              opacity: 1
+          - type: state-icon
+            entity: binary_sensor.hot_tub_control_heating
+            tap_action:
+              action: navigate
+              navigation_path: '#hot-tub-control'
+            style:
+              top: 54%
+              left: 54%
+              transform: translate(-50%, -50%) scale(.25,.25)
+
+      - type: vertical-stack
+        cards:
+          - type: custom:bubble-card
+            card_type: pop-up
+            hash: '#hot-tub-control'
+            show_header: true
+          - type: picture-elements
+            elements:
+              - type: state-label
+                style:
+                  left: 50%
+                  top: 39%
+                  color: orange
+                entity: sensor.hot_tub_display
+              - type: state-label
+                style:
+                  left: 34%
+                  top: 35%
+                  color: gray
+                  font-size: 70%
+                prefix: 'Set Temp:'
+                entity: input_number.hot_tub_set_temperature
+              - type: image
+                title: Soak Timer Button
+                image: /local/88x88.png
+                entity: button.hot_tub_control_soak_timer_button
+                tap_action:
+                  action: toggle
+                style:
+                  top: 28.5%
+                  left: 11.5%
+                  opacity: 0
+                  transform: translate(0%, 0%) scale(.6,.3)
+              - type: image
+                title: Set Temp Button
+                image: /local/88x88.png
+                entity: button.hot_tub_control_temp_set_button
+                tap_action:
+                  action: toggle
+                style:
+                  top: 28.5%
+                  left: 26%
+                  opacity: 0
+                  transform: translate(0%, 0%) scale(.6,.3)
+              - type: custom:text-action-element
+                text: Ozonator
+                style:
+                  top: 68%
+                  left: 43%
+                  color: null
+                  font-size: x-small
+                  font-family: null
+                  font-weight: bold
+                  transform: translate(0%, -50%) scale(1, 1)
+                  padding-left: 1px
+                  padding-right: 1px
+                  padding-top: 0px
+                  padding-bottom: 0px
+              - type: state-icon
+                entity: binary_sensor.hot_tub_control_ozonator
+                double_tap_action:
+                  action: toggle
+                style:
+                  top: 67.7%
+                  left: 56%
+                  transform: translate(-50%, -50%) scale(.3, .3)
+              - type: custom:text-action-element
+                text: Heating
+                style:
+                  top: 59%
+                  left: 43.7%
+                  color: null
+                  font-size: x-small
+                  font-family: null
+                  font-weight: bold
+                  transform: translate(0%, -50%) scale(1, 1)
+                  padding-left: 1px
+                  padding-right: 1px
+                  padding-top: 0px
+                  padding-bottom: 0px
+              - type: state-icon
+                entity: binary_sensor.hot_tub_control_heating
+                double_tap_action:
+                  action: toggle
+                style:
+                  top: 58.5%
+                  left: 55.5%
+                  transform: translate(-50%, -50%) scale(.3, .3)
+              - type: image
+                title: Lights Button
+                image: /local/88x88.png
+                entity: button.hot_tub_control_lights_button
+                tap_action:
+                  action: toggle
+                style:
+                  top: 28.5%
+                  left: 55%
+                  opacity: 0
+                  transform: translate(0%, 0%) scale(.6,.3)
+              - type: custom:text-action-element
+                text: 'On'
+                style:
+                  top: 59%
+                  left: 61%
+                  color: null
+                  font-size: x-small
+                  font-family: null
+                  font-weight: bold
+                  transform: translate(0%, -50%) scale(1, 1)
+                  padding-left: 1px
+                  padding-right: 1px
+                  padding-top: 0px
+                  padding-bottom: 0px
+              - type: state-icon
+                entity: binary_sensor.hot_tub_control_lights
+                double_tap_action:
+                  action: toggle
+                style:
+                  top: 58.5%
+                  left: 66.3%
+                  transform: translate(-50%, -50%) scale(.3, .3)
+              - type: image
+                title: Jets Button
+                image: /local/88x88.png
+                entity: button.hot_tub_control_jets_button
+                tap_action:
+                  action: toggle
+                style:
+                  top: 28.5%
+                  left: 69.3%
+                  opacity: 0
+                  transform: translate(0%, 0%) scale(.6,.3)
+              - type: custom:text-action-element
+                text: Low
+                style:
+                  top: 59%
+                  left: 71%
+                  color: null
+                  font-size: x-small
+                  font-family: null
+                  font-weight: bold
+                  transform: translate(0%, -50%) scale(1, 1)
+                  padding-left: 1px
+                  padding-right: 1px
+                  padding-top: 0px
+                  padding-bottom: 0px
+              - type: custom:text-action-element
+                text: Hi
+                style:
+                  top: 59%
+                  left: 80.5%
+                  color: null
+                  font-size: x-small
+                  font-family: null
+                  font-weight: bold
+                  transform: translate(0%, -50%) scale(1, 1)
+                  padding-left: 1px
+                  padding-right: 1px
+                  padding-top: 0px
+                  padding-bottom: 0px
+              - type: state-icon
+                entity: binary_sensor.hot_tub_control_jets_low
+                double_tap_action:
+                  action: toggle
+                style:
+                  top: 58.5%
+                  left: 77.5%
+                  transform: translate(-50%, -50%) scale(.3, .3)
+              - type: state-icon
+                entity: binary_sensor.hot_tub_control_jets_high
+                double_tap_action:
+                  action: toggle
+                style:
+                  top: 58.5%
+                  left: 84.5%
+                  transform: translate(-50%, -50%) scale(.3, .3)
+              - type: state-icon
+                entity: climate.hot_tub_thermostat
+                style:
+                  top: 75%
+                  left: 89%
+                  transform: translate(-50%, -50%) scale(1, 1)
+            image: /api/image/serve/e2325f2ba35ce36e87227bbc6e72fb50/512x512
