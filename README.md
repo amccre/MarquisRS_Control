@@ -5,7 +5,9 @@ ESPHome firmware, a custom display-decoder component, Home Assistant configurati
 > [!CAUTION]
 > A spa combines lethal **120/240 V AC**, high-current equipment, water, and wet-location wiring. This is an experimental hobby project, not a listed or certified spa controller. Retain all factory safety controls and GFCI protection. Use appropriate isolation, fusing, grounding, strain relief, moisture protection, and enclosures. Disconnect and verify power before opening equipment. Installation should be completed or reviewed by a qualified electrician. You assume all risk.
 
-![Home Assistant hot tub control panel](Photos/HotTubControlPanel_HomeAssistant.PNG)
+<p align="center">
+  <img src="Photos/HotTubControlPanel_HomeAssistant.PNG" alt="Home Assistant hot tub control panel" width="600">
+</p>
 
 ## Overview
 
@@ -63,7 +65,11 @@ This implementation is hardware-specific. Marquis changed hardware over time, so
 | As required | Optocouplers/transistor stages | Isolated simulation of panel buttons |
 | As required | Protected power supply, fuse, connectors, enclosure | Safe permanent installation |
 
-See the [circuit diagram](CircuitDiagram.png), [PDF drawing](Circuit_Diagram.pdf), and [original component notes](Buttons%26CTs.txt) before assembly.
+See the [PDF drawing](Circuit_Diagram.pdf), [editable ODG source](Circuit_Diagram.odg), and [original component notes](Buttons%26CTs.txt) before assembly.
+
+<p align="center">
+  <img src="CircuitDiagram.png" alt="Marquis Recreational Series ESP32 interface circuit diagram" width="850">
+</p>
 
 ### ESP32 Pin Assignments
 
@@ -79,6 +85,25 @@ See the [circuit diagram](CircuitDiagram.png), [PDF drawing](Circuit_Diagram.pdf
 | GPIO22 | ADS1115 SCL |
 
 Button outputs pulse for 150 ms. ESP32 pins must drive the documented interface circuitry; do **not** connect a GPIO directly to mains or an unverified panel circuit.
+
+### Topside RJ45 Pinout
+
+The reverse-engineering worksheet identifies the eight topside-connector conductors as follows. Confirm orientation and voltage on your own controller before relying on this table.
+
+| RJ45 pin | Signal |
+| ---: | --- |
+| 1 | +5 V DC |
+| 2 | Jets button |
+| 3 | Temp Set button |
+| 4 | Ground |
+| 5 | Display data |
+| 6 | Display clock |
+| 7 | Soak Timer button |
+| 8 | Light button |
+
+<p align="center">
+  <img src="ReverseEngineering/RJ45-Pinout.png" alt="Annotated Marquis topside RJ45 pinout and timing worksheet" width="650">
+</p>
 
 ### Current Monitoring
 
@@ -101,8 +126,6 @@ Clone this repository on the host running ESPHome, then enter the component dire
 git clone https://github.com/amccre/MarquisRS_Control.git
 cd MarquisRS_Control/ESPHomeComponents/marquis_rs_interface_component
 ```
-
-Because the GitHub repository is private, cloning requires an authenticated GitHub account with access.
 
 ### 2. Create Local Secrets
 
@@ -208,6 +231,12 @@ Use [`DashboardExampleConfig.txt`](HomeAssistantComponents/DashboardExampleConfi
 
 The custom [`marquis_rs_interface`](ESPHomeComponents/marquis_rs_interface_component/my_components/marquis_rs_interface/) component samples the panel data line on rising display-clock edges. A gap over 1,000 µs marks a frame boundary. Each frame contains 21 bits, sent most-significant bit first.
 
+<p align="center">
+  <img src="ReverseEngineering/Clock%26DisplayData.jpg" alt="Oscilloscope capture of the Marquis topside display clock and data signals" width="850">
+</p>
+
+The oscilloscope capture shows the separate display clock and data waveforms used to derive the decoder. The implementation waits approximately **16 µs after each rising clock edge** before sampling data, allowing the data line to settle. An idle gap greater than **1,000 µs (1 ms)** resets the bit index and starts a new frame. After **21 clocked bits**, the frame is queued for decoding. These are decoder thresholds derived from the captured installation, not a manufacturer-guaranteed protocol specification; remeasure if your controller revision behaves differently.
+
 ```text
 Bit:      20 | 19 18 | 17 | 16 | 15 14 | 13 ........ 7 | 6 ......... 0
 Meaning:   - | first |  - |heat|   -   | middle digit | final digit
@@ -216,9 +245,9 @@ Meaning:   - | first |  - |heat|   -   | middle digit | final digit
 - Bits 19–18 indicate a leading `1` or blank.
 - Bit 16 is the heater indicator.
 - Bits 13–7 and 6–0 hold seven-segment character patterns.
-- Three consecutive identical frames are required to reject noise.
+- Three consecutive identical frames are required to reject noise; stable state publication is rate-limited to 100 ms.
 - A 16-frame ring buffer transfers captures from the interrupt handler to ESPHome's main loop.
-- Publications are rate-limited to avoid overwhelming Home Assistant.
+- The handwritten [`RJ45-Pinout.png`](ReverseEngineering/RJ45-Pinout.png) worksheet preserves additional bench notes alongside the verified connector mapping above.
 
 See the [component documentation](ESPHomeComponents/marquis_rs_interface_component/README.md) and [`ReverseEngineering`](ReverseEngineering/) folder for protocol details and captures.
 
@@ -257,12 +286,16 @@ See the [component documentation](ESPHomeComponents/marquis_rs_interface_compone
 - `secrets.yaml`, ESPHome build state, IDE metadata, and Python caches are ignored.
 - The checked-in ESPHome YAML references secrets rather than storing credentials.
 - Rotate credentials that were ever embedded in another copy of this project.
-- A private GitHub repository is not a substitute for secret management.
+- Repository visibility is not a substitute for secret management.
+
+## License
+
+Except for third-party reference material noted below, this project is licensed under the [GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`). You may use, study, modify, and redistribute the project; if you distribute a modified version, the GPL requires the corresponding source and the same license freedoms to remain available.
+
+The manufacturer/reference document [`ReverseEngineering/Display Decoder - BCD to 7 Segment Display Decoder.pdf`](ReverseEngineering/Display%20Decoder%20-%20BCD%20to%207%20Segment%20Display%20Decoder.pdf) is included for technical reference and remains subject to its original copyright. The GPL applies only to material for which the repository owner has the right to grant that license. Marquis and other product names remain trademarks of their respective owners.
 
 ## Project Status and Disclaimer
 
 This is a working DIY implementation, not a universal plug-and-play controller. There is no automated hardware-in-the-loop test suite. Calibrate and validate it against your installation, retain all factory protections, and keep manual control available.
 
 This project is not affiliated with, endorsed by, or supported by Marquis Corp. Product names identify compatibility only. All files are supplied **as is**, without warranty. The user assumes all risk of code-compliance issues, warranty impact, property damage, equipment failure, electric shock, fire, injury, or death.
-
-No license file is currently included. Unless the owner adds an explicit license, the repository remains subject to the copyright holder's default rights; access to source does not by itself grant reuse or redistribution rights.
