@@ -1,0 +1,254 @@
+esphome:
+  name: hot-tub-control
+  friendly_name: hot-tub-control
+
+external_components:
+  - source: my_components
+  
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+
+
+# Enable logging
+# logger:
+#  level: DEBUG
+logger:
+  level: DEBUG
+  logs:
+    ads1115.sensor: WARN
+    ct_clamp: WARN
+    sensor: WARN
+    
+
+# Enable Home Assistant API
+api:
+  encryption:
+    # Keep the device-specific API key in the untracked secrets.yaml file.
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    # Keep the OTA password out of source control.
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Hot-Tub-Control Fallback Hotspot"
+    password: !secret fallback_ap_password
+
+captive_portal:
+    
+binary_sensor:
+  - platform: template
+    name: "Hot Tub Heating"
+    id: heating
+    disabled_by_default: false
+
+  - platform: template
+    name: Lights
+    id: lights
+    condition:
+      sensor.in_range:
+        id: lights_current
+        above: 0.75
+
+  - platform: template
+    name: Ozonator
+    condition:
+      sensor.in_range:
+        id: ozonator_current
+        above: 0.05
+
+  - platform: template
+    name: Jets Low
+    condition:
+      sensor.in_range:
+        id: jets_low_current
+        above: 2
+
+  - platform: template
+    name: Jets High
+    condition:
+      sensor.in_range:
+        id: jets_high_current
+        above: 2
+        
+text_sensor:
+  - platform: template
+    id: display_text
+    name: "Hot Tub Display"
+    disabled_by_default: false
+    update_interval: 250ms
+
+
+marquis_rs_interface:
+  id: marquis_spa
+  clock_pin: GPIO25
+  data_pin: GPIO26
+  heating_sensor: heating
+  display_sensor: display_text
+
+output:
+  - platform: gpio
+    id: lights_output
+    pin: GPIO19
+  - platform: gpio
+    id: soak_timer_output
+    pin: GPIO18
+  - platform: gpio
+    id: temp_set_output
+    pin: GPIO17
+  - platform: gpio
+    id: jets_output
+    pin: GPIO16
+
+button:
+  - platform: output
+    name: "Soak Timer Button"
+    output: soak_timer_output
+    duration: 150ms
+     
+  - platform: output
+    name: "Temp Set Button"
+    output: temp_set_output
+    duration: 150ms
+
+  - platform: output
+    name: "Lights Button"
+    output: lights_output
+    duration: 150ms
+
+  - platform: output
+    name: "Jets Button"
+    output: jets_output
+    duration: 150ms
+ 
+###########################################################################
+
+i2c:
+  - id: bus_a
+    sda: GPIO21
+    scl: GPIO22
+    scan: true
+    #frequency: 800kHz
+###########################################################################
+  
+ads1115:
+  - address: 0x48
+    i2c_id: bus_a
+ #   continuous_mode: on
+    continuous_mode: off
+###########################################################################
+
+
+
+sensor:
+
+#--------------------------------------------------------------------------
+
+# Lights  
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: 6.144
+    name: "A0 RAW"
+    accuracy_decimals: 2
+    internal: True
+    id: a0_raw
+    update_interval: 2000ms
+
+
+  - platform: ct_clamp
+    sensor: a0_raw
+    id: lights_current
+    name: Lights Current
+    sample_duration: 150ms
+    update_interval: 2000ms
+    accuracy_decimals: 2
+    filters:
+      - calibrate_linear:
+        - 0 -> 0
+        - 1 -> 5
+
+#--------------------------------------------------------------------------
+
+# Ozonator
+  - platform: ads1115
+    multiplexer: 'A1_GND'
+    gain: 6.144
+    name: "A1 RAW"
+    accuracy_decimals: 2
+    internal: True
+    id: a1_raw
+    update_interval: 2000ms
+
+
+  - platform: ct_clamp
+    sensor: a1_raw
+    id: ozonator_current
+    name: Ozonator Current
+    sample_duration: 150ms
+    update_interval: 2000ms
+    accuracy_decimals: 2
+    filters:
+      - calibrate_linear:
+        - 0 -> 0
+        - 1 -> 5
+
+#--------------------------------------------------------------------------
+
+# Jets Low
+  - platform: ads1115
+    multiplexer: 'A2_GND'
+    gain: 6.144
+    name: "A2 RAW"
+    accuracy_decimals: 2
+    internal: True
+    id: a2_raw
+    update_interval: 2000ms
+
+
+  - platform: ct_clamp
+    sensor: a2_raw
+    id: jets_low_current
+    name: Jets Low Current
+    sample_duration: 150ms
+    update_interval: 2000ms
+    accuracy_decimals: 2
+    filters:
+      - calibrate_linear:
+        - 0 -> 0
+        - 1 -> 10
+
+#--------------------------------------------------------------------------
+
+# Jets High
+  - platform: ads1115
+    multiplexer: 'A3_GND'
+    gain: 6.144
+    name: "A3 RAW"
+    accuracy_decimals: 2
+    internal: True
+    id: a3_raw
+    update_interval: 2000ms
+
+
+  - platform: ct_clamp
+    sensor: a3_raw
+    id: jets_high_current
+    name: Jets High Current
+    sample_duration: 150ms
+    update_interval: 2000ms
+    accuracy_decimals: 2
+    filters:
+      - calibrate_linear:
+        - 0 -> 0
+        - 1 -> 10
+
+#--------------------------------------------------------------------------

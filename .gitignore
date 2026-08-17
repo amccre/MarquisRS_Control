@@ -1,0 +1,17 @@
+# ESPHome-generated build output and local state
+.esphome/
+
+# ESPHome credentials must remain local. Commit secrets.example.yaml instead.
+secrets.yaml
+**/secrets.yaml
+
+# Python-generated cache files
+__pycache__/
+*.py[cod]
+
+# Editor and operating-system metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

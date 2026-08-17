@@ -1,0 +1,38 @@
+THe plan is to use ESPhome & Home Assistant to control my hot tub.
+
+I have worked out the electronics interface to the hot tub, just need to configure the ESP32 firmware in ESPHome.
+
+I will need 4 buttons in Home Assistant labeled "Soak Timer", "Temp Set", "Light", & "Jets"
+
+Each Button will cause a corresponding pin on the ESP32 to go high for 150ms. 
+
+There are also 4 Current Transformers (CTs) connected to 4 different pins to detect if the light is on or if the Jets are running Low or High or if the Ozonator is running. The Sensors will be called "Light", "Jets Low", "Jets High" & "Ozonator" and they will be binary sensors.
+
+----------------------------------
+
+
+Current Transformer
+(CT)
+
+
+Jets Low
+Jets High
+2x SCT-013-010	10A:1V
+
+Lights
+Ozonator
+2x SCT-013-005	 5A:1V
+
+Heat (Not Needed, detected via LCD display logic)
+
+
+2Pcs SCT013 Non-invasive Split Core AC Current Transformer Sensor SCT-013-010 (10A 1V 1%)
+https://www.amazon.com/dp/B0C33JYFR7
+
+2Pcs SCT013 Non-invasive Split AC Core Current Transformer Sensor SCT-013-005 (5A 1V 1%)
+https://www.amazon.com/dp/B0C33N6NBS
+
+
+https://www.amazon.com/dp/B0137UD8RQ?ref_=ppx_hzod_title_dt_b_fed_asin_title_0_0
+Bussmann BK/HTB-26I-R HTB Series Fuse Holder 20 Amp UL 16 Amp CSA 250 Volt AC Panel Mount
+
