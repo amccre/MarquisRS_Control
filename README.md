@@ -120,6 +120,23 @@ The reverse-engineering worksheet identifies the eight topside-connector conduct
 
 These values describe one installation. Place each CT around **one conductor only**, compare readings with a trusted meter/known load, and tune both `calibrate_linear` and binary-sensor thresholds.
 
+### Completed Installation
+
+The finished interface is mounted in its printed enclosure near the spa equipment while preserving separation between the low-voltage electronics and high-voltage equipment wiring.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="Photos/Mounted1.jpg" alt="Completed Marquis hot tub controller installation, first view" width="420"><br>
+      <sub>Mounted controller and surrounding equipment</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="Photos/Mounted2.jpg" alt="Completed Marquis hot tub controller installation, second view" width="420"><br>
+      <sub>Installed enclosure and wiring, alternate view</sub>
+    </td>
+  </tr>
+</table>
+
 ## ESPHome Installation
 
 ### 1. Copy the Project
@@ -283,6 +300,8 @@ Bit order: A B C D E F G
 For example, `1111110` lights segments A–F and leaves G off, producing `0`; `0110000` lights B and C, producing `1`; and `1101101` produces `2`. The component contains a lookup table for digits `0`–`9`, a useful subset of letters shown by spa status/error codes, blank (`0000000`), and `?` for an unknown pattern. A leading `1` is encoded separately in frame bits 19–18, allowing the three-character display to represent values such as `102` as well as two-digit temperatures.
 
 See the [component documentation](ESPHomeComponents/marquis_rs_interface_component/README.md) and [`ReverseEngineering`](ReverseEngineering/) folder for protocol details and captures.
+
+An example [`ESPHomeLogs.png`](Photos/ESPHomeLogs.png) screenshot is included with the build photos as a reference for the decoded output seen during operation.
 
 ## Troubleshooting
 
