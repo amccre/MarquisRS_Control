@@ -63,13 +63,21 @@ This implementation is hardware-specific. Marquis changed hardware over time, so
 | 2 | SCT-013-005, 5 A : 1 V | Lights and ozonator monitoring |
 | 2 | SCT-013-010, 10 A : 1 V | Low- and high-speed jet monitoring |
 | As required | Optocouplers/transistor stages | Isolated simulation of panel buttons |
-| As required | Protected power supply, fuse, connectors, enclosure | Safe permanent installation |
+| 1 | External USB power supply | Dedicated power for the ESP32/ESP8266 |
+| As required | Fuse, connectors, enclosure | Safe permanent installation |
 
 See the [PDF drawing](Circuit_Diagram.pdf), [editable ODG source](Circuit_Diagram.odg), and [original component notes](Buttons%26CTs.txt) before assembly.
 
 <p align="center">
   <img src="CircuitDiagram.png" alt="Marquis Recreational Series ESP32 interface circuit diagram" width="850">
 </p>
+
+### Microcontroller Power
+
+> [!IMPORTANT]
+> The 5 V DC supplied by the hot tub control board does not provide enough current to power an ESP32 or ESP8266. The hot tub controller will reboot continuously if you try to use it to power the microcontroller. This made it necessary to use an external USB power supply.
+
+Use a suitably rated, safety-certified USB supply and preserve the signal reference/isolation arrangement shown in the circuit diagram. Do not increase the load on the spa's 5 V rail in an attempt to eliminate the external supply. Keep the low-voltage USB supply and wiring protected from water, condensation, mains terminals, pumps, and heater conductors.
 
 ### ESP32 Pin Assignments
 
@@ -100,10 +108,6 @@ The reverse-engineering worksheet identifies the eight topside-connector conduct
 | 6 | Display clock |
 | 7 | Soak Timer button |
 | 8 | Light button |
-
-<p align="center">
-  <img src="ReverseEngineering/RJ45-Pinout.png" alt="Annotated Marquis topside RJ45 pinout and timing worksheet" width="650">
-</p>
 
 ### Current Monitoring
 
@@ -229,13 +233,25 @@ Use [`DashboardExampleConfig.txt`](HomeAssistantComponents/DashboardExampleConfi
 
 ## How Display Decoding Works
 
-The custom [`marquis_rs_interface`](ESPHomeComponents/marquis_rs_interface_component/my_components/marquis_rs_interface/) component samples the panel data line on rising display-clock edges. A gap over 1,000 µs marks a frame boundary. Each frame contains 21 bits, sent most-significant bit first.
+The custom [`marquis_rs_interface`](ESPHomeComponents/marquis_rs_interface_component/my_components/marquis_rs_interface/) component samples the panel data line on display-clock edges and reconstructs 21-bit frames, sent most-significant bit first.
 
 <p align="center">
   <img src="ReverseEngineering/Clock%26DisplayData.jpg" alt="Oscilloscope capture of the Marquis topside display clock and data signals" width="850">
 </p>
 
-The oscilloscope capture shows the separate display clock and data waveforms used to derive the decoder. The implementation waits approximately **16 µs after each rising clock edge** before sampling data, allowing the data line to settle. An idle gap greater than **1,000 µs (1 ms)** resets the bit index and starts a new frame. After **21 clocked bits**, the frame is queued for decoding. These are decoder thresholds derived from the captured installation, not a manufacturer-guaranteed protocol specification; remeasure if your controller revision behaves differently.
+### Display Data and Clock Timing
+
+Measurements from the captured installation show:
+
+- data starts **1 µs before** the clock pulse;
+- data ends **1 µs after** the clock pulse;
+- each data pulse is **12 µs** wide;
+- gaps between pulses are **12 µs**;
+- gaps between display segments are **19 µs**;
+- gaps between complete sequences are approximately **17 ms**; and
+- button-control pulses are **150 ms**.
+
+The firmware interrupt is triggered by a rising clock edge and waits approximately **16 µs** before reading the data line. After **21 clocked bits**, the completed frame is queued for decoding. The implementation also treats a gap over **1,000 µs (1 ms)** as a frame boundary; the measured 17 ms inter-sequence gap comfortably exceeds that threshold. These values were measured on this installation and are not a manufacturer-guaranteed protocol specification, so remeasure if another controller revision behaves differently.
 
 ```text
 Bit:      20 | 19 18 | 17 | 16 | 15 14 | 13 ........ 7 | 6 ......... 0
@@ -247,7 +263,24 @@ Meaning:   - | first |  - |heat|   -   | middle digit | final digit
 - Bits 13–7 and 6–0 hold seven-segment character patterns.
 - Three consecutive identical frames are required to reject noise; stable state publication is rate-limited to 100 ms.
 - A 16-frame ring buffer transfers captures from the interrupt handler to ESPHome's main loop.
-- The handwritten [`RJ45-Pinout.png`](ReverseEngineering/RJ45-Pinout.png) worksheet preserves additional bench notes alongside the verified connector mapping above.
+
+### Seven-Segment Character Decoding
+
+The final 14 frame bits represent two seven-segment characters. Each seven-bit value maps segments `A` through `G`, ordered from most-significant to least-significant bit:
+
+```text
+       A
+      ---
+   F |   | B
+      -G-
+   E |   | C
+      ---
+       D
+
+Bit order: A B C D E F G
+```
+
+For example, `1111110` lights segments A–F and leaves G off, producing `0`; `0110000` lights B and C, producing `1`; and `1101101` produces `2`. The component contains a lookup table for digits `0`–`9`, a useful subset of letters shown by spa status/error codes, blank (`0000000`), and `?` for an unknown pattern. A leading `1` is encoded separately in frame bits 19–18, allowing the three-character display to represent values such as `102` as well as two-digit temperatures.
 
 See the [component documentation](ESPHomeComponents/marquis_rs_interface_component/README.md) and [`ReverseEngineering`](ReverseEngineering/) folder for protocol details and captures.
 
@@ -290,9 +323,7 @@ See the [component documentation](ESPHomeComponents/marquis_rs_interface_compone
 
 ## License
 
-Except for third-party reference material noted below, this project is licensed under the [GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`). You may use, study, modify, and redistribute the project; if you distribute a modified version, the GPL requires the corresponding source and the same license freedoms to remain available.
-
-The manufacturer/reference document [`ReverseEngineering/Display Decoder - BCD to 7 Segment Display Decoder.pdf`](ReverseEngineering/Display%20Decoder%20-%20BCD%20to%207%20Segment%20Display%20Decoder.pdf) is included for technical reference and remains subject to its original copyright. The GPL applies only to material for which the repository owner has the right to grant that license. Marquis and other product names remain trademarks of their respective owners.
+This project is licensed under the [GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`). You may use, study, modify, and redistribute the project; if you distribute a modified version, the GPL requires the corresponding source and the same license freedoms to remain available. Marquis and other product names remain trademarks of their respective owners.
 
 ## Project Status and Disclaimer
 
